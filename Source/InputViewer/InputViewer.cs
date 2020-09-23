@@ -1,15 +1,18 @@
 ﻿using LLHandlers;
 using LLScreen;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace InputViewer
 {
     class InputViewer : MonoBehaviour
     {
 
-        private const string modVersion = "1.0a";
+#pragma warning disable IDE0051 // Remove unused private members
+        private const string modVersion = "1.1";
         private const string repositoryOwner = "Daioutzu";
         private const string repositoryName = "LLBMM-InputViewer";
+#pragma warning restore IDE0051
 
         public static InputViewer Instance { get; private set; } = null;
         public static ModMenuIntegration MMI = null;
@@ -35,18 +38,35 @@ namespace InputViewer
 
         bool InGame => World.instance != null && (GetCurrentGameState() == JOFJHDJHJGI.CDOFDJMLGLO || GetCurrentGameState() == JOFJHDJHJGI.LGILIJKMKOD) && !UIScreen.loadingScreenActive;
         float selectViewingMode = 4;
+        public int BackgroundTransparency { get; private set; }
         bool showInLobby = false;
+        bool altLocation = true;
 
-        private void ModMenuInit()
+        void ModMenuInit()
         {
             if ((MMI != null && !modIntegrated) || LLModMenu.ModMenu.Instance.currentOpenMod == "InputViewer")
             {
                 selectViewingMode = MMI.GetSliderValue("(slider)selectViewingMode");
+                BackgroundTransparency = MMI.GetSliderValue("(slider)backgroundTransparency");
                 showInLobby = MMI.GetTrueFalse(MMI.configBools["(bool)showInLobby"]);
+                altLocation = MMI.GetTrueFalse(MMI.configBools["(bool)altLocation"]);
                 if (!modIntegrated) { Debug.Log("[LLBMM] InputViewer: ModMenuIntegration Done"); };
                 modIntegrated = true;
             }
         }
+        //Method to Log all the active game objects
+#if DEBUG
+        void PrintAllGameObjects()
+        {
+            string txt = "";
+            foreach (var name in FindObjectsOfType<GameObject>())
+            {
+                string str = (name.transform.parent != null) ? name.transform.parent.gameObject.name : "NO_PARENT";
+                txt += $"{str}/{name.name}\n";
+            }
+            Debug.Log(txt);
+        }
+#endif
         void Update()
         {
             ModMenuInit();
@@ -54,15 +74,68 @@ namespace InputViewer
             {
                 Cursor.visible = !Cursor.visible;
             }
+
+            //Experimental Code - not much to see here.
+#if DEBUG
+            if (Input.GetKeyDown(KeyCode.Alpha9))
+            {
+                Cursor.visible = !Cursor.visible;
+                GameObject header = new GameObject("header", typeof(Image), typeof(LayoutElement));
+                GameObject body = new GameObject("body", typeof(Image), typeof(LayoutElement));
+                GameObject frame = new GameObject("frame", typeof(VerticalLayoutGroup));
+                GameObject panel = new GameObject("panel", typeof(Image));
+                GameObject canvas = new GameObject("canvas", typeof(Canvas), typeof(CanvasScaler));
+
+                panel.transform.SetParent(canvas.transform);
+                frame.transform.SetParent(panel.transform);
+                header.transform.SetParent(frame.transform);
+                body.transform.SetParent(frame.transform);
+
+                header.GetComponent<LayoutElement>().minHeight = 50;
+                body.GetComponent<LayoutElement>().minHeight = 100;
+                body.GetComponent<LayoutElement>().preferredHeight = 999;
+
+                canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                canvas.GetComponent<CanvasScaler>().matchWidthOrHeight = 0.5f;
+                canvas.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1280, 720);
+
+                panel.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.5f);
+                panel.GetComponent<RectTransform>().anchorMin = new Vector2(0, 0);
+                panel.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
+                panel.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
+
+                RectTransform frameRect = frame.GetComponent<RectTransform>();
+                VerticalLayoutGroup frameVertGroup = frame.GetComponent<VerticalLayoutGroup>();
+                frameRect.anchorMin = new Vector2(0, 0);
+                frameRect.anchorMax = new Vector2(0, 0);
+                frameRect.pivot = new Vector2(0.5f, 0.5f);
+                frameRect.sizeDelta = new Vector2(550, 300);
+                frameRect.position = new Vector2(300, 203);
+                frameVertGroup.spacing = 10;
+                frameVertGroup.childControlHeight = true;
+                frameVertGroup.childControlWidth = true;
+                frameVertGroup.childForceExpandHeight = true;
+                frameVertGroup.childForceExpandWidth = true;
+            }
+#endif
         }
 
-        Rect inputRect = new Rect(30, Screen.height - 147, 300, 117);
+        Rect inputRectLeft = new Rect(30, Screen.height - 147, 300, 117);
+        Rect inputRectRight = new Rect(Screen.width - 350, Screen.height - 147, 300, 117);
 
         void OnGUI()
         {
-            if (ViewingMode((ViewMode)selectViewingMode))
+            if (ViewingMode((ViewMode)selectViewingMode) || LLModMenu.ModMenu.Instance.inModOptions)
             {
-                inputRect = GUI.Window(102289, inputRect, InputWindow, "", IVStyle.inputViewerBG);
+                if (altLocation)
+                {
+                    inputRectRight = GUILayout.Window(102289, inputRectRight, InputWindow, "", IVStyle.InputViewerBG);
+                }
+                else
+                {
+                    inputRectLeft = GUILayout.Window(102289, inputRectLeft, InputWindow, "", IVStyle.InputViewerBG);
+                }
             }
         }
 
@@ -76,7 +149,7 @@ namespace InputViewer
             return JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN;
         }
 
-        bool isOnline()
+        bool IsOnline()
         {
             return JOMBNFKIHIC.GDNFJCCCKDM;
         }
@@ -141,9 +214,9 @@ namespace InputViewer
                 case ViewMode.Training:
                     return GetCurrentGameMode() == GameMode.TRAINING && (InGame || (showInLobby && GetCurrentGameState() == (JOFJHDJHJGI)GameState.LOBBY_TRAINING));
                 case ViewMode.local:
-                    return !isOnline() && (InGame || LocalLobby());
+                    return !IsOnline() && (InGame || LocalLobby());
                 case ViewMode.Online:
-                    return isOnline() && (InGame || OnlineLobby());
+                    return IsOnline() && (InGame || OnlineLobby());
                 case ViewMode.All:
                     return InGame || LocalLobby() || OnlineLobby();
                 default:
@@ -185,7 +258,6 @@ namespace InputViewer
             };
 
             GUI.DragWindow();
-            GUILayout.BeginArea(new Rect(0, 0, inputRect.width, inputRect.height));
             GUILayout.BeginHorizontal(border);
 
             GUILayout.BeginVertical();
@@ -194,24 +266,24 @@ namespace InputViewer
 
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.JUMP)] == 100 ? true : false, "", IVStyle.jumpStyle);
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.UP)] == 100 ? true : false, "", IVStyle.dirUpStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.JUMP)] == 100, "", IVStyle.JumpStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.UP)] == 100, "", IVStyle.DirUpStyle);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.LEFT)] == 100 ? true : false, "", IVStyle.dirLefStyle);
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.DOWN)] == 100 ? true : false, "", IVStyle.dirDwnStyle);
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.RIGHT)] == 100 ? true : false, "", IVStyle.dirRigStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.LEFT)] == 100, "", IVStyle.DirLefStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.DOWN)] == 100, "", IVStyle.DirDwnStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.RIGHT)] == 100, "", IVStyle.DirRigStyle);
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.SWING)] == 100 ? true : false, "", IVStyle.swingStyle); //Swing Button
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.BUNT)] == 100 ? true : false, "", IVStyle.buntStyle); //Bunt Button
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.SWING)] == 100, "", IVStyle.SwingStyle); //Swing Button
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.BUNT)] == 100, "", IVStyle.BuntStyle); //Bunt Button
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.GRAB)] == 100 ? true : false, "", IVStyle.grabStyle); //Grab Button
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.TAUNT)] == 100 ? true : false, "", IVStyle.tauntStyle); //Taunt Button
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.GRAB)] == 100, "", IVStyle.GrabStyle); //Grab Button
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.TAUNT)] == 100, "", IVStyle.TauntStyle); //Taunt Button
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
@@ -222,25 +294,24 @@ namespace InputViewer
             GUILayout.BeginVertical(expressBorder);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_UP)] == 100 ? true : false, "", IVStyle.expNiceStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_UP)] == 100, "", IVStyle.ExpNiceStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_LEFT)] == 100 ? true : false, "", IVStyle.expOopsStyle);
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_RIGHT)] == 100 ? true : false, "", IVStyle.expWowStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_LEFT)] == 100, "", IVStyle.ExpOopsStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_RIGHT)] == 100, "", IVStyle.ExpWowStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_DOWN)] == 100 ? true : false, "", IVStyle.expBringItStyle);
+            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_DOWN)] == 100, "", IVStyle.ExpBringItStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.FlexibleSpace();
             GUILayout.EndVertical();
 
             GUILayout.EndHorizontal();
-            GUILayout.EndArea();
         }
 
     }

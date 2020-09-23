@@ -20,7 +20,7 @@ namespace InputViewer
         public Dictionary<string, string> configGaps = new Dictionary<string, string>();
         public Dictionary<string, string> configText = new Dictionary<string, string>();
         public List<string> writeQueue = new List<string>();
-        private string iniLocation = Path.GetDirectoryName(Application.dataPath) + @"\ModSettings\";
+        private readonly string iniLocation = Path.GetDirectoryName(Application.dataPath) + @"\ModSettings\";
 
 
         private void Start()
@@ -73,7 +73,9 @@ namespace InputViewer
                 Debug.Log("[LLBMM] InputViewer: Created ModSettings Folder");
             }
             AddToWriteQueue("(slider)selectViewingMode", "4|0|4");
+            AddToWriteQueue("(slider)backgroundTransparency", "0|0|5");
             AddToWriteQueue("(bool)showInLobby", "false");
+            AddToWriteQueue("(bool)altLocation", "false");
             AddToWriteQueue("(text)viewInfo0", $"<b>Select View Mode Index</b>:");
             AddToWriteQueue("(text)gap0", "");
             AddToWriteQueue("(text)viewInfo1", $"0 : <b>Off</b>");
