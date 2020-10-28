@@ -73,9 +73,9 @@ namespace InputViewer
                 Debug.Log("[LLBMM] InputViewer: Created ModSettings Folder");
             }
             AddToWriteQueue("(slider)selectViewingMode", "4|0|4");
-            AddToWriteQueue("(slider)backgroundTransparency", "0|0|5");
-            AddToWriteQueue("(bool)showInLobby", "false");
-            AddToWriteQueue("(bool)altLocation", "false");
+            AddToWriteQueue("(slider)backgroundTransparency", "0|0|6");
+            AddToWriteQueue("(bool)miniInputViewer", "false");
+            AddToWriteQueue("(bool)scaleWithResolution", "true");
             AddToWriteQueue("(text)viewInfo0", $"<b>Select View Mode Index</b>:");
             AddToWriteQueue("(text)gap0", "");
             AddToWriteQueue("(text)viewInfo1", $"0 : <b>Off</b>");

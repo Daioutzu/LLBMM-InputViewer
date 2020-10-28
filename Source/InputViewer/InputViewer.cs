@@ -1,7 +1,7 @@
 ﻿using LLHandlers;
+using LLModdingTools;
 using LLScreen;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace InputViewer
 {
@@ -9,7 +9,7 @@ namespace InputViewer
     {
 
 #pragma warning disable IDE0051 // Remove unused private members
-        private const string modVersion = "1.1";
+        public const string modVersion = "1.2.0";
         private const string repositoryOwner = "Daioutzu";
         private const string repositoryName = "LLBMM-InputViewer";
 #pragma warning restore IDE0051
@@ -21,14 +21,25 @@ namespace InputViewer
         {
             GameObject gameObject = new GameObject("InputViewer"); //The game object is what we use to interact with our mod
             Instance = gameObject.AddComponent<InputViewer>();
+            Instance.tag = "InputViewer";
             DontDestroyOnLoad(gameObject); // Makes sure our game object isn't destroyed
             IVStyle.ATInit();
         }
 
+        static JOFJHDJHJGI CurrentGameState => DNPFJHMAIBP.HHMOGKIMBNM();
+        static GameMode CurrentGameMode => JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN;
+        static bool IsOnline => JOMBNFKIHIC.GDNFJCCCKDM;
+
+        void Awake()
+        {
+            SaveSystem.Init();
+        }
+
         private void Start()
         {
-            if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); Debug.Log("[LLBMM] InputViewer: Added GameObject \"ModMenuIntegration\""); }
             Debug.Log("[LLBMM] InputViewer Started");
+            if (MMI == null) { MMI = gameObject.AddComponent<ModMenuIntegration>(); Debug.Log("[LLBMM] InputViewer: Added GameObject \"ModMenuIntegration\""); }
+            Load_InputViewerPosition();
         }
 
         private void OnDestroy()
@@ -36,26 +47,26 @@ namespace InputViewer
             Debug.Log("[LLBMM] InputViewer Destroyed");
         }
 
-        bool InGame => World.instance != null && (GetCurrentGameState() == JOFJHDJHJGI.CDOFDJMLGLO || GetCurrentGameState() == JOFJHDJHJGI.LGILIJKMKOD) && !UIScreen.loadingScreenActive;
+        bool InGame => World.instance != null && (CurrentGameState == JOFJHDJHJGI.CDOFDJMLGLO || CurrentGameState == JOFJHDJHJGI.LGILIJKMKOD) && !UIScreen.loadingScreenActive;
         float selectViewingMode = 4;
         public int BackgroundTransparency { get; private set; }
-        bool showInLobby = false;
-        bool altLocation = true;
+        bool scaleToResolution = false;
+        public bool excludeExpressions = false;
 
         void ModMenuInit()
         {
             if ((MMI != null && !modIntegrated) || LLModMenu.ModMenu.Instance.currentOpenMod == "InputViewer")
             {
                 selectViewingMode = MMI.GetSliderValue("(slider)selectViewingMode");
+                excludeExpressions = MMI.GetTrueFalse(MMI.configBools["(bool)miniInputViewer"]);
                 BackgroundTransparency = MMI.GetSliderValue("(slider)backgroundTransparency");
-                showInLobby = MMI.GetTrueFalse(MMI.configBools["(bool)showInLobby"]);
-                altLocation = MMI.GetTrueFalse(MMI.configBools["(bool)altLocation"]);
+                scaleToResolution = MMI.GetTrueFalse(MMI.configBools["(bool)scaleWithResolution"]);
                 if (!modIntegrated) { Debug.Log("[LLBMM] InputViewer: ModMenuIntegration Done"); };
                 modIntegrated = true;
             }
         }
-        //Method to Log all the active game objects
 #if DEBUG
+        //Method to Log all the active game objects
         void PrintAllGameObjects()
         {
             string txt = "";
@@ -67,13 +78,83 @@ namespace InputViewer
             Debug.Log(txt);
         }
 #endif
+
+        void Auto_Save()
+        {
+            if (inputRect.position != posUpdated)
+            {
+                saveTimer += Time.deltaTime;
+                if (CountDown(ref saveTimer, 5f))
+                {
+                    Save_InputViewerPosition();
+                    posUpdated = inputRect.position;
+                }
+            }
+        }
+
+        void Save_InputViewerPosition()
+        {
+            SaveData save = new SaveData
+            {
+                inputViwerPos = inputRect.position,
+            };
+            string json = JsonUtility.ToJson(save);
+            SaveSystem.Save(json);
+            Debug.Log("[LLBMM] Saved");
+        }
+        void Load_InputViewerPosition(bool isReload = false)
+        {
+            string saveString = SaveSystem.Load();
+            if (saveString != null)
+            {
+                SaveData saveLoad = JsonUtility.FromJson<SaveData>(saveString);
+                posUpdated = inputRect.position = saveLoad.inputViwerPos;
+                Debug.Log("[LLBMM] InputViewer: Loaded Overlay Position");
+            }
+            else if (isReload == false)
+            {
+                string json = JsonUtility.ToJson(new SaveData());
+                SaveSystem.Save(json);
+                Debug.Log("[LLBMM] InputViewer: Default Save Data Created");
+                Load_InputViewerPosition(true);
+            }
+            else
+            {
+                Debug.Log("[LLBMM] (Debug) InputViewer: Load Failed");
+            }
+        }
+
+        Vector2 posUpdated;
+        float saveTimer;
+
+        static bool CountDown(ref float timer, float duration)
+        {
+            if (timer > 0 && timer < duration) // Cooldown in seconds
+            {
+                timer += Time.deltaTime;
+            }
+            else
+            {
+                timer = 0;
+            }
+            return timer == 0;
+        }
+
         void Update()
         {
             ModMenuInit();
-            if (Input.GetKeyDown(KeyCode.Tab))
+            Auto_Save();
+#if DEBUG
+            if (Input.GetKeyDown(KeyCode.Keypad7))
             {
-                Cursor.visible = !Cursor.visible;
+                Save_InputViewerPosition();
             }
+
+            if (Input.GetKeyDown(KeyCode.Keypad8))
+            {
+                Load_InputViewerPosition();
+            }
+#endif
 
             //Experimental Code - not much to see here.
 #if DEBUG
@@ -121,37 +202,22 @@ namespace InputViewer
 #endif
         }
 
-        Rect inputRectLeft = new Rect(30, Screen.height - 147, 300, 117);
-        Rect inputRectRight = new Rect(Screen.width - 350, Screen.height - 147, 300, 117);
+        Vector2 inputSizeMini = new Vector2(165, 117);
+        Vector2 inputSize = new Vector2(300, 117);
+        Rect inputRect = new Rect(30, GUITools.GUI_Height - 147, 300, 117);
 
         void OnGUI()
         {
+            if (scaleToResolution)
+            {
+                GUITools.ScaleGUIToViewPort();
+            }
             if (ViewingMode((ViewMode)selectViewingMode) || LLModMenu.ModMenu.Instance.inModOptions)
             {
-                if (altLocation)
-                {
-                    inputRectRight = GUILayout.Window(102289, inputRectRight, InputWindow, "", IVStyle.InputViewerBG);
-                }
-                else
-                {
-                    inputRectLeft = GUILayout.Window(102289, inputRectLeft, InputWindow, "", IVStyle.InputViewerBG);
-                }
+                inputRect.size = excludeExpressions ? inputSizeMini : inputSize;
+
+                inputRect = GUILayout.Window(102289, inputRect, InputWindow, "", IVStyle.InputViewerBG);
             }
-        }
-
-        JOFJHDJHJGI GetCurrentGameState()
-        {
-            return DNPFJHMAIBP.HHMOGKIMBNM();
-        }
-
-        GameMode GetCurrentGameMode()
-        {
-            return JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN;
-        }
-
-        bool IsOnline()
-        {
-            return JOMBNFKIHIC.GDNFJCCCKDM;
         }
 
         enum ViewMode
@@ -175,36 +241,6 @@ namespace InputViewer
             LOBBY_ONLINE = 5,
         }
 
-        bool LocalLobby()
-        {
-            if (!showInLobby) return false;
-
-            switch (GetCurrentGameState())
-            {
-                case (JOFJHDJHJGI)GameState.LOBBY_LOCAL:
-                case (JOFJHDJHJGI)GameState.LOBBY_TRAINING:
-                case (JOFJHDJHJGI)GameState.LOBBY_CHALLENGE:
-                case (JOFJHDJHJGI)GameState.LOBBY_TUTORIAL:
-                case (JOFJHDJHJGI)GameState.LOBBY_STORY:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        bool OnlineLobby()
-        {
-            if (!showInLobby) return false;
-
-            switch (GetCurrentGameState())
-            {
-                case (JOFJHDJHJGI)GameState.LOBBY_ONLINE:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         bool ViewingMode(ViewMode selectedView)
         {
             switch (selectedView)
@@ -212,13 +248,13 @@ namespace InputViewer
                 case ViewMode.Off:
                     return false;
                 case ViewMode.Training:
-                    return GetCurrentGameMode() == GameMode.TRAINING && (InGame || (showInLobby && GetCurrentGameState() == (JOFJHDJHJGI)GameState.LOBBY_TRAINING));
+                    return CurrentGameMode == GameMode.TRAINING && InGame;
                 case ViewMode.local:
-                    return !IsOnline() && (InGame || LocalLobby());
+                    return !IsOnline && InGame;
                 case ViewMode.Online:
-                    return IsOnline() && (InGame || OnlineLobby());
+                    return IsOnline && InGame;
                 case ViewMode.All:
-                    return InGame || LocalLobby() || OnlineLobby();
+                    return InGame;
                 default:
                     return false;
             }
@@ -242,23 +278,26 @@ namespace InputViewer
                 font = IVStyle.inputViewerFont,
                 fontSize = 20,
                 alignment = TextAnchor.MiddleLeft,
-                margin = new RectOffset(10, 0, 3, 14),
+                margin = new RectOffset(5, 5, 6, 16),
+                padding = new RectOffset(0, 0, 0, 0),
                 wordWrap = false,
+                clipping = TextClipping.Overflow,
             };
 
             GUIStyle border = new GUIStyle()
             {
-                padding = new RectOffset(4, 4, 0, 0),
-            };
-
-            GUIStyle expressBorder = new GUIStyle()
-            {
-                padding = new RectOffset(8, 8, 8, 8),
-                fixedWidth = 150,
+                padding = new RectOffset(3, 3, 0, 0),
             };
 
             GUI.DragWindow();
-            GUILayout.BeginHorizontal(border);
+            GUILayoutOption[] gUILayoutOption = new GUILayoutOption[]
+            {
+                GUILayout.MinWidth(inputRect.size.x),
+                GUILayout.MinHeight(inputRect.size.y),
+                GUILayout.MaxWidth(inputRect.size.x),
+                GUILayout.MaxHeight(inputRect.size.y),
+            };
+            GUILayout.BeginHorizontal(border, gUILayoutOption);
 
             GUILayout.BeginVertical();
             GUILayout.Label("Input Viewer", headerStyle);
@@ -287,30 +326,31 @@ namespace InputViewer
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
-            GUILayout.EndHorizontal();
             GUILayout.EndVertical();
-            GUILayout.FlexibleSpace();
-
-            GUILayout.BeginVertical(expressBorder);
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_UP)] == 100, "", IVStyle.ExpNiceStyle);
-            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_LEFT)] == 100, "", IVStyle.ExpOopsStyle);
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_RIGHT)] == 100, "", IVStyle.ExpWowStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_DOWN)] == 100, "", IVStyle.ExpBringItStyle);
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            GUILayout.FlexibleSpace();
-            GUILayout.EndVertical();
-
+            if (excludeExpressions == false)
+            {
+                GUILayout.BeginVertical();
+                GUILayout.FlexibleSpace();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_UP)] == 100, "", IVStyle.ExpNiceStyle);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_LEFT)] == 100, "", IVStyle.ExpOopsStyle);
+                GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_RIGHT)] == 100, "", IVStyle.ExpWowStyle);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.Toggle(InputHandler.currentInput[player.CJFLMDNNMIE, InputAction.ActionToIndex(InputAction.EXPRESS_DOWN)] == 100, "", IVStyle.ExpBringItStyle);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.FlexibleSpace();
+                GUILayout.EndVertical();
+            }
             GUILayout.EndHorizontal();
         }
 
