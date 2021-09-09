@@ -32,7 +32,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <Reference Include="System">
+    </Reference>
     <Reference Include="0Harmony">
       <HintPath>Libs\0Harmony.dll</HintPath>
       <Private>False</Private>
@@ -75,9 +76,11 @@
     </Reference>
     <Reference Include="UnityEngine.TextCoreModule">
       <HintPath>Libs\UnityEngine.TextCoreModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>Libs\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>

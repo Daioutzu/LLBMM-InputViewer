@@ -5,11 +5,12 @@ using UnityEngine;
 using BepInEx;
 using BepInEx.Configuration;
 using LLBML;
+using LLBML.Players;
 
 namespace InputViewer
 {
     [BepInPlugin(PluginInfos.PLUGIN_ID, PluginInfos.PLUGIN_NAME, PluginInfos.PLUGIN_VERSION)]
-    [BepInDependency("fr.glomzubuk.plugins.llb.llbml", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency(LLBML.PluginInfos.PLUGIN_ID, BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("no.mrgentle.plugins.llb.modmenu", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInProcess("LLBlaze.exe")]
     class InputViewer : BaseUnityPlugin
@@ -37,12 +38,7 @@ namespace InputViewer
         private void Start()
         {
             Logger.LogInfo("InputViewer Started");
-            Logger.LogInfo("Searching ModMenu");
-            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("no.mrgentle.plugins.llb.modmenu"))
-            {
-                Logger.LogInfo("Registering to ModMenu");
-                ModMenu.ModMenu.RegisterMod(this.Info);
-            }
+            LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info);
             posUpdated = inputViewerPosition.Value;
         }
 
@@ -227,11 +223,11 @@ namespace InputViewer
 
         void InputWindow(int wId)
         {
-            ALDOKEMAOMB player = PlayerApi.GetPlayer(0);
+            Player player = Player.GetPlayer(0);
             for (int i = 0; i < 4; i++)
             {
-                var tmpPlayer = PlayerApi.GetPlayer(i);
-                if (PlayerApi.IsLocal(tmpPlayer) && PlayerApi.IsInMatch(tmpPlayer))
+                var tmpPlayer = Player.GetPlayer(i);
+                if (tmpPlayer.IsLocalPeer && tmpPlayer.IsInMatch)
                 {
                     player = tmpPlayer;
                     break;
