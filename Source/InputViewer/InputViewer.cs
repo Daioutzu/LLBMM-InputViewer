@@ -1,4 +1,6 @@
-﻿using LLHandlers;
+﻿using System;
+using System.Collections.Generic;
+using LLHandlers;
 using LLModdingTools;
 using LLScreen;
 using UnityEngine;
@@ -38,7 +40,15 @@ namespace InputViewer
         private void Start()
         {
             Logger.LogInfo("InputViewer Started");
-            LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info);
+            LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info, new List<String> {
+                "<b>Select View Mode Index</b>:",
+                "",
+                "0 : <b>Off</b>",
+                "1 : <b>Training Mode</b>",
+                "2 : <b>Local Games</b>",
+                "3 : <b>Online Games</b>",
+                "4 : <b>All Games</b>"
+            });
             posUpdated = inputViewerPosition.Value;
         }
 
@@ -66,14 +76,6 @@ namespace InputViewer
             excludeExpressions = Config.Bind<bool>("Toggles", "miniInputViewer", false);
 
             inputViewerPosition = Config.Bind<Vector2>("Position", "inputViewerPosition", new Vector2(30, GUITools.GUI_Height - 147));
-
-            Config.Bind("Documentation", "text0", "<b>Select View Mode Index</b>:", "modmenu_text");
-            Config.Bind("Documentation", "textgap0", "", "modmenu_text");
-            Config.Bind("Documentation", "text1", "0 : <b>Off</b>", "modmenu_text");
-            Config.Bind("Documentation", "text2", "1 : <b>Training Mode</b>", "modmenu_text");
-            Config.Bind("Documentation", "text3", "2 : <b>Local Games</b>", "modmenu_text");
-            Config.Bind("Documentation", "text4", "3 : <b>Online Games</b>", "modmenu_text");
-            Config.Bind("Documentation", "text5", "4 : <b>All Games</b>", "modmenu_text");
         }
 #if DEBUG
         //Method to Log all the active game objects
@@ -261,7 +263,7 @@ namespace InputViewer
             GUILayout.BeginHorizontal(border, gUILayoutOption);
 
             GUILayout.BeginVertical();
-            GUILayout.Label("Input Viewer", headerStyle);
+            GUILayout.Label(excludeExpressions.Value ? "Inputs" : "Input Viewer", headerStyle);
             GUILayout.BeginHorizontal();
 
             GUILayout.BeginVertical();
