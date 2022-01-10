@@ -7,7 +7,7 @@ namespace InputViewer
     public static class IVStyle
     {
 
-        readonly static string resourceFolder = Application.dataPath + "/Managed/InputViewerResources";
+        readonly static string bundlesFolder = Path.Combine(Path.GetDirectoryName(InputViewer.Instance.Info.Location), "Bundles");
 
         public static AssetBundle uiBundle;
         public static Font inputViewerFont;
@@ -16,7 +16,7 @@ namespace InputViewer
 
         static void LoadAssets()
         {
-            uiBundle = AssetBundle.LoadFromFile(resourceFolder + "/Bundles/UI");
+            uiBundle = AssetBundle.LoadFromFile(Path.Combine(bundlesFolder, "UI"));
             Texture2D[] texture = uiBundle.LoadAllAssets<Texture2D>();
             for (int i = 0; i < texture.Length; i++)
             {
@@ -24,6 +24,7 @@ namespace InputViewer
             }
             uiTexture2DAssets.Add("BlankTexture", new Texture2D(0, 0));
             inputViewerFont = uiBundle.LoadAsset<Font>("assets/ui/elements.ttf");
+            foreach (var s in IVStyle.uiTexture2DAssets) Debug.Log(s.Key);
         }
 
         public static void ATInit()
@@ -36,9 +37,10 @@ namespace InputViewer
             get
             {
                 GUIStyleState bg = new GUIStyleState();
-                bool express = InputViewer.Instance.excludeExpressions;
-                string viewerBg = express ? "ViewerMiniBG" : "ViewerBG";
-                switch (InputViewer.Instance.BackgroundTransparency)
+                bool express = InputViewer.Instance.excludeExpressions.Value;
+                //string viewerBg = express ? "ViewerMiniBG" : "ViewerBG";
+                string viewerBg = "ViewerBG";
+                switch (InputViewer.Instance.backgroundTransparency.Value)
                 {
                     case 6:
                         bg.background = uiTexture2DAssets[$"BlankTexture"]; break;
