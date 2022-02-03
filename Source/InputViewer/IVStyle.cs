@@ -24,7 +24,7 @@ namespace InputViewer
             }
             uiTexture2DAssets.Add("BlankTexture", new Texture2D(0, 0));
             inputViewerFont = uiBundle.LoadAsset<Font>("assets/ui/elements.ttf");
-            foreach (var s in IVStyle.uiTexture2DAssets) Debug.Log(s.Key);
+            //foreach (var s in IVStyle.uiTexture2DAssets) Debug.Log(s.Key);
         }
 
         public static void ATInit()

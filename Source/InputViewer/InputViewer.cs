@@ -8,6 +8,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using LLBML;
 using LLBML.Players;
+using LLBML.States;
 
 namespace InputViewer
 {
@@ -57,7 +58,7 @@ namespace InputViewer
             Logger.LogInfo("InputViewer Destroyed");
         }
 
-        bool InGame => World.instance != null && (StateApi.CurrentGameState == GameState.GAME || StateApi.CurrentGameState == GameState.GAME_PAUSE) && !UIScreen.loadingScreenActive;
+        bool InGame => World.instance != null && (GameStates.GetCurrent() == GameState.GAME || GameStates.GetCurrent() == GameState.GAME_PAUSE) && !UIScreen.loadingScreenActive;
 
         public ConfigEntry<int> selectViewingMode;
         public ConfigEntry<int> backgroundTransparency;
@@ -187,6 +188,7 @@ namespace InputViewer
             {
                 GUITools.ScaleGUIToViewPort();
             }
+            //TODO Remove hard dep to modmenu for LLBMM compatibility
             if (ViewingMode((ViewMode)selectViewingMode.Value) || ModMenu.ModMenu.InModOptions)
             {
                 inputRect.size = excludeExpressions.Value ? inputSizeMini : inputSize;
