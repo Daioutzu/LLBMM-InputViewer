@@ -9,6 +9,8 @@ using BepInEx.Configuration;
 using LLBML;
 using LLBML.Players;
 using LLBML.States;
+using LLBML.Networking;
+using LLBML.Utils;
 
 namespace InputViewer
 {
@@ -41,7 +43,7 @@ namespace InputViewer
         private void Start()
         {
             Logger.LogInfo("InputViewer Started");
-            LLBML.Utils.ModDependenciesUtils.RegisterToModMenu(this.Info, new List<String> {
+            ModDependenciesUtils.RegisterToModMenu(this.Info, new List<String> {
                 "<b>Select View Mode Index</b>:",
                 "",
                 "0 : <b>Off</b>",
@@ -189,7 +191,7 @@ namespace InputViewer
                 GUITools.ScaleGUIToViewPort();
             }
             //TODO Remove hard dep to modmenu for LLBMM compatibility
-            if (ViewingMode((ViewMode)selectViewingMode.Value) || ModMenu.ModMenu.InModOptions)
+            if (ViewingMode((ViewMode)selectViewingMode.Value) || ModDependenciesUtils.InModOptions())
             {
                 inputRect.size = excludeExpressions.Value ? inputSizeMini : inputSize;
 
