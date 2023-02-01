@@ -30,7 +30,6 @@ namespace InputViewer
         public static InputViewer Instance { get; private set; } = null;
 
 
-        private Vector2 posUpdated;
         private float saveTimer;
 
         void Awake()
@@ -38,6 +37,7 @@ namespace InputViewer
             Instance = this;
             IVStyle.ATInit();
             ConfigInit();
+            inputRect.position = inputViewerPosition.Value;
         }
 
         private void Start()
@@ -52,7 +52,6 @@ namespace InputViewer
                 "3 : <b>Online Games</b>",
                 "4 : <b>All Games</b>"
             });
-            posUpdated = inputViewerPosition.Value;
         }
 
         private void OnDestroy()
@@ -96,12 +95,13 @@ namespace InputViewer
 
         void Auto_Save()
         {
-            if (inputRect.position != posUpdated)
+            if (inputRect.position != inputViewerPosition.Value)
             {
                 saveTimer += Time.deltaTime;
                 if (CountDown(ref saveTimer, 5f))
                 {
-                    posUpdated = inputViewerPosition.Value = inputRect.position;
+                    inputViewerPosition.Value = inputRect.position;
+                    Config.Save();
                 }
             }
         }
@@ -121,7 +121,10 @@ namespace InputViewer
 
         void Update()
         {
-            Auto_Save();
+            if (ModDependenciesUtils.InModOptions())
+            {
+                Auto_Save();
+            }
 #if DEBUG
             if (Input.GetKeyDown(KeyCode.Keypad7))
             {
